@@ -1,0 +1,17 @@
+#!/bin/bash
+# filepath: /Users/ondfisk/Source/mob-station/scripts/mob
+
+COMMAND="$1"
+
+# Show usage if no argument
+if [[ -z "$COMMAND" ]]; then
+  echo "Usage: mob <command> [args]"
+  exit 1
+fi
+
+# Convert spaces to dashes and prepend mob-
+script_name="mob-${1//' '/'-'}"
+shift
+
+# Execute the script with remaining arguments
+"$script_name" "$@"

@@ -1,0 +1,81 @@
+#!/bin/bash
+# ~/bin/mob-as
+
+SETTINGS_FILE=~/bin/mob-settings.json
+
+if [[ ! -f "$SETTINGS_FILE" ]]; then
+  echo "❌ Roster file not found: $SETTINGS_FILE" >&2
+  exit 1
+fi
+
+REPO_DIR="$(git rev-parse --show-toplevel 2>/dev/null)"
+
+# Must be in a repo
+if [[ -z "$REPO_DIR" ]]; then
+  echo "❌ Not inside a git repository." >&2
+  exit 1
+fi
+
+HANDLE="$1"
+
+# Show usage if no argument
+if [[ -z "$HANDLE" ]]; then
+  echo "Usage: mob-as <handle>"
+  jq -r '.members[] | "- \(.handle): \(.name)"' "$SETTINGS_FILE" 2>/dev/null
+  exit 1
+fi
+
+# Look up the member
+NAME=$(jq -r ".members[] | select(.handle==\"$HANDLE\") | .name" "$SETTINGS_FILE" 2>/dev/null)
+EMAIL=$(jq -r ".members[] | select(.handle==\"$HANDLE\") | .email" "$SETTINGS_FILE" 2>/dev/null)
+
+if [[ -z "$NAME" || "$NAME" == "null" ]]; then
+  echo "❌ Unknown member: $HANDLE" >&2
+  echo "Known handles:" >&2
+  jq -r '.members[] | "- \(.handle): \(.name)"' "$SETTINGS_FILE" 2>/dev/null
+  exit 1
+fi
+
+# Set git identity (per-repo only, no --global)
+git config user.name  "$NAME"
+git config user.email "$EMAIL"
+
+# Build co-author list (everyone else)
+COAUTHORS=$(jq -r --arg d "$EMAIL" '
+  [.members[]
+   | select(.email != $d)
+   | "\(.name) <\(.email)>" ]
+  | join(", ")' "$SETTINGS_FILE")
+
+if [[ -z "$COAUTHORS" ]]; then
+  echo "❌ No co-authors found, can't mob alone." >&2
+  echo "⭐ Update members in $SETTINGS_FILE." >&2
+  exit 1
+fi
+
+# -- Refresh the prepare-commit-msg hook --
+HOOK_FILE="$REPO_DIR/.git/hooks/prepare-commit-msg"
+mkdir -p "$REPO_DIR/.git/hooks"
+
+cat > "$HOOK_FILE" << 'EOF'
+#!/bin/bash
+# Auto-append Co-authored-by trailers from mob-settings.json
+
+MSG_FILE="$1"
+DRIVER_EMAIL=$(git config user.email)
+SETTINGS_FILE=~/bin/mob-settings.json
+
+COAUTHORS=$(jq -r --arg d "$DRIVER_EMAIL" '
+  [.members[]
+   | select(.email != $d)
+   | "\(.name) <\(.email)>" ]
+  | join(", ")' "$SETTINGS_FILE")
+
+printf "Co-authored-by: $COAUTHORS" >> "$MSG_FILE"
+EOF
+
+chmod +x "$HOOK_FILE"
+
+echo "✅ Driver: $NAME <$EMAIL>"
+echo "✅ Co-authors: ${COAUTHORS% }"
+echo "⭐ If co-authors are missing, update members in $SETTINGS_FILE."

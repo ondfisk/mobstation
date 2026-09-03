@@ -1,0 +1,14 @@
+{
+  "github": {
+    "organization": "MyOrg",
+    "repository": "MyRepo"
+  },
+  "members": [
+    { "handle": "ondfisk", "name": "Rasmus Lystrøm", "email": "rasmus@lystroem.dk" }
+  ],
+  "roster": [
+    { "handle": "ondfisk", "name": "Rasmus Lystrøm", "email": "rasmus@lystroem.dk" },
+    { "handle": "alice", "name": "Alice Andersen", "email": "alice@company.com" },
+    { "handle": "bob", "name": "Bob Bergstrøm", "email": "bob@company.com" }
+  ]
+}

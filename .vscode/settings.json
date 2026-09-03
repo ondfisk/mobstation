@@ -1,0 +1,7 @@
+{
+	"chat.disableAIFeatures": false,
+	"editor.trimAutoWhitespace": true,
+	"files.autoSave": "afterDelay",
+	"files.trimFinalNewlines": true,
+	"files.trimTrailingWhitespace": true
+}

@@ -1,0 +1,50 @@
+#!/bin/bash
+# ~/bin/bin/mob-morning
+
+STATE_DIR=~/.mob-state
+STAMP_FILE="$STATE_DIR/authenticated-$(date +%F)"
+SETTINGS_FILE=~/bin/mob-settings.json
+
+ORGANIZATION=$(jq -r '.github.organization' "$SETTINGS_FILE")
+REPOSITORY=$(jq -r '.github.repository' "$SETTINGS_FILE")
+
+mkdir -p "$STATE_DIR"
+
+if [[ -f "$STAMP_FILE" ]]; then
+  echo "✅ Already authenticated today by a teammate. Run 'mob status' to verify."
+  exit 0
+fi
+
+echo "🪑 Welcome! You're the first one in. Signing in takes ~3 minutes."
+echo "----------------------------------------------------------"
+
+# 1. Open browser
+echo "→ Opening browser, please sign in to GitHub and Google Cloud. Use YOUR account; tokens get wiped tonight."
+open -na "Helium" --args \
+  "https://github.com/login" "https://console.cloud.google.com"
+
+echo ""
+echo "Once you have signed in to GitHub and Google Cloud in the browser, press Enter to continue..."
+read
+
+# 2. GitHub
+echo "→ Signing in to GitHub CLI. Use YOUR account; tokens get wiped tonight."
+gh auth login --hostname github.com --git-protocol https --web
+gh auth setup-git
+
+# 3. Google Cloud CLI
+echo "→ Signing into gcloud. Use YOUR account; tokens get wiped tonight."
+gcloud auth login --browser
+
+# 4. Clone the monorepo folder
+cd ~
+gh repo clone "$ORGANIZATION/$REPOSITORY"
+cd $REPOSITORY
+code .
+
+# Mark the day as armed
+touch "$STAMP_FILE"
+echo ""
+echo "----------------------------------------------------------"
+echo "🎉 Machine is armed for $(date +%F)."
+echo "⚠️  Teardown runs automatically at 19:00 — don't leave work unpushed."

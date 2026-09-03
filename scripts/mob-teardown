@@ -1,0 +1,51 @@
+#!/bin/bash
+# ~/bin/bin/mob-teardown
+
+mkdir -p "$HOME/.mob-state"
+
+echo "[$(date '+%F %T')] Starting teardown"
+
+# -- Quit applications --
+osascript -e 'tell application "Finder" to quit'
+osascript -e 'tell application "Helium" to quit'
+osascript -e 'tell application "Slack" to quit'
+osascript -e 'tell application "Visual Studio Code" to quit'
+
+echo "[$(date '+%F %T')] Applications shut down"
+
+sleep 2
+
+# -- Reset browser --
+HELIUM_BUNDLE=$(defaults read "/Applications/Helium.app/Contents/Info" CFBundleIdentifier)
+rm -rf "$HOME/Library/Application Support/$HELIUM_BUNDLE"
+cp -r ~/.mob-state/helium "$HOME/Library/Application Support/$HELIUM_BUNDLE"
+
+echo "[$(date '+%F %T')] Browser reset"
+
+# -- Revoke credentials --
+gh auth logout --hostname github.com
+rm -rf ~/.config/gh
+
+gcloud auth revoke --all
+rm -rf ~/.config/gcloud
+
+slack logout --all
+
+echo "[$(date '+%F %T')] Credentials revoked"
+
+# -- Remove code
+rm -rf ~/code/
+
+echo "[$(date '+%F %T')] Source code removed"
+
+# -- Clear day state --
+rm -rf ~/Library/Saved\ Application\ State/*
+rm -f ~/.mob-state/authenticated-*
+
+echo "[$(date '+%F %T')] Day state cleared"
+
+# -- Shutdown --
+echo "🌙 Station reset. Shutting down in 10 seconds (Ctrl+C to cancel)..."
+sleep 10
+echo "[$(date '+%F %T')] Shutting down"
+sudo /sbin/shutdown -h now
