@@ -1,0 +1,10 @@
+#!/bin/bash
+# ~/bin/mob-status
+
+GH_STATUS=$(gh auth status 2>&1 | grep -o 'Logged in.*')
+echo "GitHub: ${GH_STATUS:-❌ not signed in}"
+
+GCLOUD_ACCOUNT=$(gcloud auth list --filter=status:ACTIVE --format='value(account)' 2>/dev/null)
+echo "GCloud: ${GCLOUD_ACCOUNT:-none}"
+
+[[ -f "$HOME/.mob-state/authenticated-$(date +%F)" ]] && echo "Day: ✅ armed ($(date +%F))" || echo "Day: ❌ needs morning ritual"
